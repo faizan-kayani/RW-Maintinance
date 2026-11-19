@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<title>RW Maintenance – Billing</title>
+<style id="pagestyle"></style>
+<style>
+:root{
+ --bg:#f3f4f8;--card:#fff;--tx:#111827;--mut:#6b7280;--bd:#e5e7eb;
+ --pri:#c1121f;--pri2:#9b0d18;--ok:#059669;--okb:#d1fae5;--warn:#d97706;--warnb:#fef3c7;--bad:#dc2626;--badb:#fee2e2;
+ --side:#16171b;--r:12px;--sh:0 1px 3px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.04)
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45}
+.hide{display:none!important}
+
+/* ---------- layout ---------- */
+.app{display:flex;min-height:100vh}
+.side{width:240px;background:var(--side);color:#cbd5e1;padding:20px 14px;position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;gap:6px}
+.brand{background:#fff;border-radius:12px;padding:6px 8px;margin-bottom:16px}
+.brand img{display:block;width:100%;height:auto}
+.mtop{display:none;background:#fff;border-bottom:1px solid var(--bd);padding:6px 12px;text-align:center}
+.mtop img{height:78px;width:auto}
+.ihd .lg{height:96px;width:auto;margin-bottom:6px}
+.side button{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;font-size:15px;color:#cbd5e1}
+.side button:hover{background:#1f2937}
+.side button.on{background:var(--pri);color:#fff}
+.side .ic{width:22px;text-align:center;font-size:18px}
+.side .cnt{margin-left:auto;background:var(--bad);color:#fff;border-radius:99px;font-size:11px;padding:1px 8px}
+.main{margin-left:240px;flex:1;min-width:0;padding:26px 28px 40px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.top h1{margin:0;font-size:24px}
+.top p{margin:2px 0 0;color:var(--mut);font-size:14px}
+.tabbar{display:none}
+
+/* ---------- ui ---------- */
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:20px;margin-bottom:18px;box-shadow:var(--sh)}
+.card h3{margin:0 0 14px;font-size:16px}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--mut);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:9px;font:inherit;font-size:15px;background:#fff;color:var(--tx);outline:none;transition:.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--pri);color:#fff;padding:11px 18px;border-radius:9px;font-size:14.5px;font-weight:600;transition:.15s;text-align:center}
+.btn:hover{background:var(--pri2)}
+.btn.g{background:var(--ok)}.btn.r{background:var(--bad)}.btn.o{background:#fff;color:var(--tx);border:1px solid var(--bd)}.btn.o:hover{background:#f9fafb}.btn.w{background:#25d366}
+.btn.s{padding:7px 12px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap}
+.badge.paid{background:var(--okb);color:var(--ok)}
+.badge.pending{background:var(--warnb);color:var(--warn)}
+.badge.overdue{background:var(--badb);color:var(--bad)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:16px;box-shadow:var(--sh)}
+.stat small{color:var(--mut);font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.stat b{display:block;font-size:24px;margin-top:6px}
+
+/* items editor */
+.item{display:grid;grid-template-columns:1fr 90px 130px 120px 40px;gap:10px;align-items:end;padding:10px 0;border-bottom:1px dashed var(--bd)}
+.item .lt{font-weight:700;padding:11px 0;text-align:right}
+.item .x{width:40px;height:42px;padding:0}
+.ihead{display:grid;grid-template-columns:1fr 90px 130px 120px 40px;gap:10px;font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase}
+.sumbox{margin-left:auto;max-width:320px;margin-top:14px}
+.sumbox div{display:flex;justify-content:space-between;padding:4px 0}
+.sumbox .gt{font-size:20px;font-weight:800;border-top:2px solid var(--tx);margin-top:6px;padding-top:8px}
+
+/* tables */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:10px 12px;border-bottom:1px solid var(--bd)}
+td{padding:13px 12px;border-bottom:1px solid var(--bd);font-size:14.5px;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.empty{padding:34px;text-align:center;color:var(--mut)}
+.alert{background:var(--warnb);border:1px solid #fcd34d;color:#92400e;padding:13px 16px;border-radius:var(--r);margin-bottom:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.alert a{color:#92400e;font-weight:700}
+
+/* invoice */
+#inv{background:#fff;padding:36px;border:1px solid var(--bd);border-radius:var(--r);position:relative;max-width:820px;margin:0 auto;box-shadow:var(--sh);overflow:hidden}
+.ihd{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:18px;margin-bottom:20px;border-bottom:3px solid var(--pri)}
+.ihd h2{margin:0;font-size:24px}
+.ihd .big{font-size:30px;font-weight:800;color:var(--pri);letter-spacing:.05em}
+.stamp{position:absolute;top:44%;left:50%;transform:translate(-50%,-50%) rotate(-18deg);border:6px solid var(--ok);color:var(--ok);font-size:64px;font-weight:900;padding:0 24px;border-radius:12px;opacity:.14;pointer-events:none;letter-spacing:.1em}
+.stamp.p{border-color:var(--warn);color:var(--warn)}
+#inv table th{background:#f3f4f8;color:#374151}
+.ft{text-align:center;color:var(--mut);margin-top:34px;font-size:13px}
+
+/* ---------- mobile ---------- */
+@media(max-width:860px){
+ .side{display:none}
+ .mtop{display:block}
+ .main{margin:0;padding:16px 14px 96px}
+ .top h1{font-size:20px}
+ .stats{grid-template-columns:repeat(2,1fr)}
+ .stat b{font-size:19px}
+ .card{padding:15px}
+ .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--bd);z-index:20;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 16px rgba(0,0,0,.06)}
+ .tabbar button{all:unset;cursor:pointer;flex:1;text-align:center;padding:9px 2px 8px;font-size:11px;color:var(--mut);position:relative}
+ .tabbar button .ic{display:block;font-size:20px;line-height:1.2}
+ .tabbar button.on{color:var(--pri);font-weight:700}
+ .tabbar .cnt{position:absolute;top:3px;left:55%;background:var(--bad);color:#fff;border-radius:99px;font-size:10px;padding:0 6px}
+ /* item rows become cards */
+ .ihead{display:none}
+ .item{grid-template-columns:1fr 1fr;gap:8px;background:#f9fafb;border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px}
+ .item .dwrap{grid-column:1/-1}
+ .item .lt{text-align:left;padding:0;grid-column:1/2;align-self:center}
+ .item .x{grid-column:2/3;justify-self:end;width:100%}
+ .item label.m{display:block}
+ .sumbox{max-width:none}
+ /* tables become cards */
+ table.resp thead{display:none}
+ table.resp,table.resp tbody,table.resp tr,table.resp td{display:block;width:100%}
+ table.resp tr{border:1px solid var(--bd);border-radius:12px;padding:6px 12px;margin-bottom:12px;background:#fff}
+ table.resp td{border:0;padding:6px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:right}
+ table.resp td::before{content:attr(data-l);color:var(--mut);font-size:12px;font-weight:600;text-transform:uppercase;text-align:left}
+ table.resp td.act{display:block;text-align:left;padding-top:10px}
+ table.resp td.act::before{display:none}
+ table.resp td.act .row .btn{flex:1 1 40%}
+ #inv{padding:18px}
+ .stamp{font-size:42px}
+ .ihd .big{font-size:24px}
+}
+@media(min-width:861px){.item label.m{display:none}}
+
+/* ---------- print ---------- */
+@media print{
+ @page{margin:12mm}
+ body{background:#fff}
+ .side,.tabbar,.noprint,.top,.alert,.mtop{display:none!important}
+ .main{margin:0;padding:0}
+ #inv{border:0;box-shadow:none;padding:0;max-width:none}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ body.pt-thermal #inv{display:none!important}
+ body.pt-thermal #rcpt{display:block!important}
+}
+/* thermal receipt */
+#rcpt{display:none;font-family:"Courier New",monospace;color:#000;font-size:12px;line-height:1.35;margin:0 auto}
+#rcpt img{display:block;margin:0 auto 4px;max-width:80%;filter:grayscale(1) contrast(1.6)}
+#rcpt .c{text-align:center}
+#rcpt hr{border:0;border-top:1px dashed #000;margin:6px 0}
+#rcpt .l{display:flex;justify-content:space-between;gap:6px}
+#rcpt .b{font-weight:700}
+#rcpt .big{font-size:15px}
+</style>
+</head>
+<body>
+<div class="mtop"><img src="logo.svg" alt="RW Maintenance"></div>
+<div class="app">
+
+<aside class="side">
+ <div class="brand"><img src="logo.svg" alt="RW Maintenance"></div>
+ <button data-v="dash"><span class="ic">📊</span>Dashboard</button>
+ <button data-v="new"><span class="ic">➕</span>New Bill</button>
+ <button data-v="list"><span class="ic">📄</span>All Bills</button>
+ <button data-v="rem"><span class="ic">🔔</span>Reminders<span class="cnt hide" data-cnt></span></button>
+ <button data-v="set"><span class="ic">⚙️</span>Settings</button>
+</aside>
+
+<main class="main">
+
+<!-- DASHBOARD -->
+<section id="v-dash">
+ <div class="top"><div><h1>Dashboard</h1><p id="dsub"></p></div><button class="btn" onclick="startNew()">+ New Bill</button></div>
+ <div id="odalert"></div>
+ <div class="stats" id="stats"></div>
+ <div class="card"><h3>Recent Bills</h3><div class="tw"><table class="resp"><thead><tr><th>Bill</th><th>Customer</th><th>Date</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody id="dtb"></tbody></table></div></div>
+</section>
+
+<!-- NEW / EDIT -->
+<section id="v-new" class="hide">
+ <div class="top"><div><h1 id="ftitle">New Bill</h1><p>Customer aur items ki detail likhein</p></div></div>
+ <div class="card">
+  <h3>Bill Details</h3>
+  <div class="grid">
+   <div><label>Bill No</label><input id="no"></div>
+   <div><label>Date</label><input type="date" id="date"></div>
+   <div><label>Due Date</label><input type="date" id="due"></div>
+  </div>
+ </div>
+ <div class="card">
+  <h3>Customer</h3>
+  <div class="grid">
+   <div><label>Name</label><input id="cname" placeholder="Customer name"></div>
+   <div><label>WhatsApp / Phone</label><input id="cphone" inputmode="tel" placeholder="923001234567"></div>
+   <div><label>Email</label><input id="cemail" type="email" placeholder="name@email.com"></div>
+  </div>
+ </div>
+ <div class="card">
+  <h3>Items</h3>
+  <div class="ihead"><div>Detail</div><div>Qty</div><div>Price</div><div style="text-align:right">Total</div><div></div></div>
+  <div id="items"></div>
+  <button class="btn o s" style="margin-top:12px" onclick="addRow()">+ Add Item</button>
+  <div class="grid" style="margin-top:18px">
+   <div><label>Discount</label><input type="number" inputmode="decimal" id="disc" value="0" min="0"></div>
+   <div><label>Tax %</label><input type="number" inputmode="decimal" id="tax" value="0" min="0"></div>
+   <div><label>Payment Status</label><select id="status"><option value="pending">Pending</option><option value="paid">Paid ✔ Done</option></select></div>
+  </div>
+  <div style="margin-top:14px"><label>Notes</label><textarea id="notes" rows="2" placeholder="Optional"></textarea></div>
+  <div class="sumbox">
+   <div><span>Subtotal</span><b id="t_sub">0</b></div>
+   <div><span>Discount</span><b id="t_disc">0</b></div>
+   <div><span>Tax</span><b id="t_tax">0</b></div>
+   <div class="gt"><span>Total</span><span id="t_grand">0</span></div>
+  </div>
+ </div>
+ <div class="row">
+  <button class="btn g" onclick="saveBill(false)">💾 Save</button>
+  <button class="btn" onclick="saveBill(true)">🖨️ Save &amp; Print</button>
+  <button class="btn o" onclick="resetForm()">Clear</button>
+ </div>
+</section>
+
+<!-- LIST -->
+<section id="v-list" class="hide">
+ <div class="top"><div><h1>All Bills</h1><p>Saved bills search aur manage karein</p></div><button class="btn" onclick="startNew()">+ New Bill</button></div>
+ <div class="card">
+  <div class="grid" style="margin-bottom:14px">
+   <input id="q" placeholder="🔍 Search name / bill no" oninput="renderList()">
+   <select id="fs" onchange="renderList()"><option value="">All</option><option value="pending">Pending</option><option value="overdue">Overdue</option><option value="paid">Paid</option></select>
+  </div>
+  <div class="tw"><table class="resp"><thead><tr><th>Bill</th><th>Customer</th><th>Date</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead><tbody id="ltb"></tbody></table></div>
+ </div>
+</section>
+
+<!-- REMINDERS -->
+<section id="v-rem" class="hide">
+ <div class="top"><div><h1>Payment Reminders</h1><p>Pending bills — WhatsApp ya Email se yaad dilayein</p></div></div>
+ <div class="card"><div class="tw"><table class="resp"><thead><tr><th>Bill</th><th>Customer</th><th>Due</th><th>Amount</th><th>Send</th></tr></thead><tbody id="rtb"></tbody></table></div></div>
+</section>
+
+<!-- SETTINGS -->
+<section id="v-set" class="hide">
+ <div class="top"><div><h1>Settings</h1><p>Aap ka business ka naam invoice par aayega</p></div></div>
+ <div class="card">
+  <h3>Business</h3>
+  <div class="grid">
+   <div><label>Business Name</label><input id="s_name"></div>
+   <div><label>Phone</label><input id="s_phone"></div>
+   <div><label>Address</label><input id="s_addr"></div>
+   <div><label>Currency</label><input id="s_cur"></div>
+   <div><label>Bill No Prefix</label><input id="s_pre"></div>
+   <div><label>Default Print</label><select id="s_mode"><option value="a4">A4 Invoice</option><option value="thermal">Thermal Receipt (small printer)</option></select></div>
+   <div><label>Thermal Paper Width</label><select id="s_paper"><option value="58">58 mm (chota)</option><option value="80">80 mm</option></select></div>
+  </div>
+  <div class="row" style="margin-top:16px"><button class="btn g" onclick="saveSettings()">Save Settings</button></div>
+ </div>
+ <div class="card">
+  <h3>Backup</h3>
+  <p style="color:var(--mut);margin-top:0">Data is browser mein save hota hai. Waqt waqt par backup download kar ke rakhein.</p>
+  <div class="row"><button class="btn" onclick="exportData()">⬇️ Download Backup</button>
+  <button class="btn o" onclick="$('imp').click()">⬆️ Restore Backup</button>
+  <input type="file" id="imp" class="hide" accept=".json" onchange="importData(event)"></div>
+ </div>
+</section>
+
+<!-- VIEW / PRINT -->
+<section id="v-view" class="hide">
+ <div class="row noprint" style="margin:0 auto 14px;max-width:820px">
+  <button class="btn" onclick="doPrint('a4')">🖨️ Print A4</button>
+  <button class="btn" style="background:#16171b" onclick="doPrint('thermal')">🧾 Print Receipt (Thermal)</button>
+  <button class="btn o" onclick="show('list')">← Back</button>
+ </div>
+ <div id="inv"></div>
+ <div id="rcpt"></div>
+</section>
+
+</main>
+</div>
+
+<nav class="tabbar">
+ <button data-v="dash"><span class="ic">📊</span>Home</button>
+ <button data-v="new"><span class="ic">➕</span>New</button>
+ <button data-v="list"><span class="ic">📄</span>Bills</button>
+ <button data-v="rem"><span class="ic">🔔</span>Remind<span class="cnt hide" data-cnt></span></button>
+ <button data-v="set"><span class="ic">⚙️</span>Settings</button>
+</nav>
+
+<script>
+const $=id=>document.getElementById(id);
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+let bills=load('bills',[]), S=Object.assign({name:'RW Maintenance',phone:'',addr:'',cur:'Rs',pre:'INV-',mode:'a4',paper:'58'},load('settings',{}));
+let editId=null;
+const save=()=>{try{localStorage.setItem('bills',JSON.stringify(bills));localStorage.setItem('settings',JSON.stringify(S))}catch(e){alert('Save nahi ho saka (browser storage band hai)')}};
+const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>S.cur+' '+(+n||0).toLocaleString('en-US',{maximumFractionDigits:2});
+
+function calc(b){
+ const sub=b.items.reduce((a,i)=>a+i.qty*i.price,0);
+ const disc=Math.min(sub,+b.disc||0);
+ const tax=(sub-disc)*(+b.tax||0)/100;
+ return {sub,disc,tax,grand:sub-disc+tax};
+}
+const isOverdue=b=>b.status==='pending'&&b.due&&b.due<today();
+const stat=b=>b.status==='paid'?'paid':isOverdue(b)?'overdue':'pending';
+const badge=b=>{const s=stat(b);return `<span class="badge ${s}">${s==='paid'?'✔ Paid':s==='overdue'?'Overdue':'Pending'}</span>`};
+
+/* ---------- navigation ---------- */
+function show(v){
+ ['dash','new','list','rem','set','view'].forEach(x=>$('v-'+x).classList.toggle('hide',x!==v));
+ document.querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v||(v==='view'&&b.dataset.v==='list')));
+ if(v==='dash')renderDash(); if(v==='list')renderList(); if(v==='rem')renderRem(); if(v==='set')loadSettings();
+ refreshBadge(); window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{if(b.dataset.v==='new')startNew();else show(b.dataset.v)});
+function startNew(){resetForm();show('new')}
+
+/* ---------- form ---------- */
+function addRow(it={desc:'',qty:1,price:''}){
+ const d=document.createElement('div');d.className='item';
+ d.innerHTML=`<div class="dwrap"><label class="m">Detail</label><input class="d" placeholder="Item / service" value="${esc(it.desc)}"></div>
+ <div><label class="m">Qty</label><input class="q" type="number" inputmode="decimal" min="0" value="${it.qty}"></div>
+ <div><label class="m">Price</label><input class="p" type="number" inputmode="decimal" min="0" value="${it.price}"></div>
+ <div class="lt">0</div><button class="btn r s x" onclick="this.closest('.item').remove();recalc()">✕</button>`;
+ d.querySelectorAll('input').forEach(i=>i.oninput=recalc);
+ $('items').appendChild(d);recalc();
+}
+function readItems(){return [...document.querySelectorAll('#items .item')].map(r=>({desc:r.querySelector('.d').value.trim(),qty:+r.querySelector('.q').value||0,price:+r.querySelector('.p').value||0})).filter(i=>i.desc||i.price)}
+function recalc(){
+ document.querySelectorAll('#items .item').forEach(r=>r.querySelector('.lt').textContent=money((+r.querySelector('.q').value||0)*(+r.querySelector('.p').value||0)));
+ const c=calc({items:readItems(),disc:$('disc').value,tax:$('tax').value});
+ $('t_sub').textContent=money(c.sub);$('t_disc').textContent='-'+money(c.disc);$('t_tax').textContent=money(c.tax);$('t_grand').textContent=money(c.grand);
+}
+['disc','tax'].forEach(i=>$(i).oninput=recalc);
+function nextNo(){const n=bills.reduce((m,b)=>Math.max(m,parseInt((String(b.no).match(/\d+$/)||[0])[0])),0)+1;return S.pre+String(n).padStart(4,'0')}
+function resetForm(){
+ editId=null;$('ftitle').textContent='New Bill';
+ $('no').value=nextNo();$('date').value=today();
+ const d=new Date();d.setDate(d.getDate()+7);$('due').value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+ ['cname','cphone','cemail','notes'].forEach(i=>$(i).value='');
+ $('disc').value=0;$('tax').value=0;$('status').value='pending';
+ $('items').innerHTML='';addRow();
+}
+function saveBill(print){
+ const items=readItems();
+ if(!$('cname').value.trim())return alert('Customer ka naam likho');
+ if(!items.length)return alert('Kam az kam ek item likho');
+ const old=bills.find(x=>x.id===editId);
+ const st=$('status').value;
+ const b={id:editId||Date.now().toString(),no:$('no').value.trim(),date:$('date').value,due:$('due').value,
+  cname:$('cname').value.trim(),cphone:$('cphone').value.replace(/\D/g,''),cemail:$('cemail').value.trim(),
+  items,disc:+$('disc').value||0,tax:+$('tax').value||0,status:st,notes:$('notes').value,
+  paidOn:st==='paid'?((old&&old.paidOn)||today()):''};
+ if(old)bills[bills.indexOf(old)]=b;else bills.unshift(b);
+ save();editId=null;
+ if(print)view(b.id,true);else{show('list')}
+}
+function editBill(id){
+ const b=bills.find(x=>x.id===id);show('new');editId=id;$('ftitle').textContent='Edit '+b.no;
+ $('no').value=b.no;$('date').value=b.date;$('due').value=b.due;$('cname').value=b.cname;$('cphone').value=b.cphone;$('cemail').value=b.cemail;
+ $('disc').value=b.disc;$('tax').value=b.tax;$('status').value=b.status;$('notes').value=b.notes;
+ $('items').innerHTML='';b.items.forEach(addRow);recalc();
+}
+function delBill(id){if(confirm('Ye bill delete karna hai?')){bills=bills.filter(b=>b.id!==id);save();rerender()}}
+function togglePaid(id){
+ const b=bills.find(x=>x.id===id);
+ b.status=b.status==='paid'?'pending':'paid';b.paidOn=b.status==='paid'?today():'';
+ save();rerender();
+}
+function rerender(){
+ if(!$('v-dash').classList.contains('hide'))renderDash();
+ if(!$('v-list').classList.contains('hide'))renderList();
+ if(!$('v-rem').classList.contains('hide'))renderRem();
+ refreshBadge();
+}
+
+/* ---------- dashboard & list ---------- */
+function actions(b){
+ return `<div class="row"><button class="btn s" onclick="view('${b.id}')">View / Print</button>
+ <button class="btn s ${b.status==='paid'?'o':'g'}" onclick="togglePaid('${b.id}')">${b.status==='paid'?'Mark Pending':'Mark Paid'}</button>
+ <button class="btn s o" onclick="editBill('${b.id}')">Edit</button><button class="btn s r" onclick="delBill('${b.id}')">Delete</button></div>`;
+}
+function billRow(b,act){
+ return `<tr><td data-l="Bill"><b>${esc(b.no)}</b></td><td data-l="Customer">${esc(b.cname)}</td><td data-l="Date">${b.date}</td><td data-l="Total"><b>${money(calc(b).grand)}</b></td><td data-l="Status">${badge(b)}</td><td class="act">${act}</td></tr>`;
+}
+function renderDash(){
+ const tot=bills.reduce((a,b)=>a+calc(b).grand,0);
+ const paid=bills.filter(b=>b.status==='paid').reduce((a,b)=>a+calc(b).grand,0);
+ const od=bills.filter(isOverdue);
+ $('dsub').textContent=S.name+' — '+new Date().toDateString();
+ $('stats').innerHTML=`<div class="stat"><small>Total Bills</small><b>${bills.length}</b></div>
+ <div class="stat"><small>Total Amount</small><b>${money(tot)}</b></div>
+ <div class="stat"><small>Received</small><b style="color:var(--ok)">${money(paid)}</b></div>
+ <div class="stat"><small>Pending</small><b style="color:var(--bad)">${money(tot-paid)}</b></div>`;
+ $('odalert').innerHTML=od.length?`<div class="alert">⚠️ <span><b>${od.length}</b> bill(s) ki payment due date guzar chuki hai.</span> <a href="#" onclick="show('rem');return false">Reminders bhejein →</a></div>`:'';
+ $('dtb').innerHTML=bills.slice(0,6).map(b=>billRow(b,`<button class="btn s o" onclick="view('${b.id}')">View / Print</button>`)).join('')||'<tr><td colspan="6" class="empty">Abhi koi bill nahi. "New Bill" se shuru karein.</td></tr>';
+}
+function renderList(){
+ const q=$('q').value.toLowerCase(),f=$('fs').value;
+ const rows=bills.filter(b=>(!q||(b.cname+b.no).toLowerCase().includes(q))&&(!f||(f==='pending'?b.status==='pending':stat(b)===f)));
+ $('ltb').innerHTML=rows.map(b=>billRow(b,actions(b))).join('')||'<tr><td colspan="6" class="empty">Koi bill nahi mila</td></tr>';
+}
+
+/* ---------- invoice ---------- */
+function view(id,autoPrint){
+ const b=bills.find(x=>x.id===id),c=calc(b);
+ const paidTxt=b.status==='paid'?'PAID'+(b.paidOn?' '+b.paidOn:''):'PENDING';
+ $('rcpt').innerHTML=`<img src="logo.svg" alt="">
+ <div class="c b">${esc(S.name)}</div>${S.addr?`<div class="c">${esc(S.addr)}</div>`:''}${S.phone?`<div class="c">${esc(S.phone)}</div>`:''}
+ <hr><div class="l"><span>Bill:</span><span>${esc(b.no)}</span></div><div class="l"><span>Date:</span><span>${b.date}</span></div>
+ <div class="l"><span>Name:</span><span>${esc(b.cname)}</span></div>${b.due&&b.status!=='paid'?`<div class="l"><span>Due:</span><span>${b.due}</span></div>`:''}
+ <hr>${b.items.map(i=>`<div>${esc(i.desc)}</div><div class="l"><span>${i.qty} x ${(+i.price).toLocaleString()}</span><span>${(i.qty*i.price).toLocaleString()}</span></div>`).join('')}
+ <hr><div class="l"><span>Subtotal</span><span>${c.sub.toLocaleString()}</span></div>
+ ${c.disc?`<div class="l"><span>Discount</span><span>-${c.disc.toLocaleString()}</span></div>`:''}${b.tax?`<div class="l"><span>Tax ${b.tax}%</span><span>${c.tax.toLocaleString()}</span></div>`:''}
+ <div class="l b big"><span>TOTAL</span><span>${S.cur} ${c.grand.toLocaleString()}</span></div><hr>
+ <div class="c b big">*** ${paidTxt} ***</div>${b.notes?`<div class="c">${esc(b.notes)}</div>`:''}
+ <hr><div class="c">Thank you!</div><div class="c">&nbsp;</div>`;
+ $('inv').innerHTML=`<div class="stamp ${b.status==='paid'?'':'p'}">${b.status==='paid'?'PAID':'PENDING'}</div>
+ <div class="ihd"><div><img class="lg" src="logo.svg" alt=""><h2>${esc(S.name)}</h2><div>${esc(S.addr)}</div><div>${esc(S.phone)}</div></div>
+ <div style="text-align:right"><div class="big">INVOICE</div><div>No: <b>${esc(b.no)}</b></div><div>Date: ${b.date}</div>${b.due?`<div>Due: ${b.due}</div>`:''}</div></div>
+ <div style="margin-bottom:18px"><div style="color:var(--mut);font-size:12px;font-weight:700;text-transform:uppercase">Bill To</div><b>${esc(b.cname)}</b><br>${esc(b.cphone)}<br>${esc(b.cemail)}</div>
+ <div class="tw"><table><thead><tr><th>#</th><th>Detail</th><th>Qty</th><th>Price</th><th style="text-align:right">Total</th></tr></thead><tbody>
+ ${b.items.map((i,n)=>`<tr><td>${n+1}</td><td>${esc(i.desc)}</td><td>${i.qty}</td><td>${money(i.price)}</td><td style="text-align:right">${money(i.qty*i.price)}</td></tr>`).join('')}</tbody></table></div>
+ <div class="sumbox"><div><span>Subtotal</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>Discount</span><b>-${money(c.disc)}</b></div>`:''}${b.tax?`<div><span>Tax (${b.tax}%)</span><b>${money(c.tax)}</b></div>`:''}
+ <div class="gt"><span>Total</span><span>${money(c.grand)}</span></div>
+ <div style="margin-top:6px"><span>Status</span><b style="color:${b.status==='paid'?'var(--ok)':'var(--warn)'}">${b.status==='paid'?'PAID'+(b.paidOn?' · '+b.paidOn:''):'PENDING'}</b></div></div>
+ ${b.notes?`<p><b>Notes:</b> ${esc(b.notes)}</p>`:''}
+ <div class="ft">Thank you for your business!</div>`;
+ show('view');if(autoPrint)setTimeout(()=>doPrint(S.mode),350);
+}
+function doPrint(mode){
+ const th=mode==='thermal',w=S.paper||'58';
+ document.body.classList.toggle('pt-thermal',th);
+ $('rcpt').style.width=th?(w==='80'?'72mm':'48mm'):'';
+ $('pagestyle').textContent=th?`@page{size:${w}mm auto;margin:2mm}`:'@page{size:A4;margin:12mm}';
+ setTimeout(()=>window.print(),100);
+}
+
+/* ---------- reminders ---------- */
+function remText(b){
+ return `Assalam o Alaikum ${b.cname},\nAap ka bill ${b.no} (${money(calc(b).grand)}) pending hai.${b.due?` Akhri tareekh: ${b.due}.`:''}\nMeharbani farma kar payment kar dein. Shukriya.\n- ${S.name}`;
+}
+const waLink=b=>`https://wa.me/${b.cphone}?text=${encodeURIComponent(remText(b))}`;
+const mailLink=b=>`mailto:${b.cemail}?subject=${encodeURIComponent('Payment Reminder - '+b.no)}&body=${encodeURIComponent(remText(b))}`;
+function renderRem(){
+ const p=bills.filter(b=>b.status==='pending').sort((a,b)=>(a.due||'9')>(b.due||'9')?1:-1);
+ $('rtb').innerHTML=p.map(b=>`<tr><td data-l="Bill"><b>${esc(b.no)}</b></td><td data-l="Customer">${esc(b.cname)}</td>
+ <td data-l="Due">${b.due||'-'} ${isOverdue(b)?'<span class="badge overdue">Overdue</span>':''}</td><td data-l="Amount"><b>${money(calc(b).grand)}</b></td>
+ <td class="act"><div class="row">${b.cphone?`<a class="btn w s" target="_blank" rel="noopener" href="${waLink(b)}">WhatsApp</a>`:''}
+ ${b.cemail?`<a class="btn s" href="${mailLink(b)}">Email</a>`:''}
+ <button class="btn g s" onclick="togglePaid('${b.id}')">Mark Paid</button></div></td></tr>`).join('')||'<tr><td colspan="5" class="empty">🎉 Koi pending payment nahi</td></tr>';
+}
+function refreshBadge(){
+ const o=bills.filter(isOverdue).length;
+ document.querySelectorAll('[data-cnt]').forEach(e=>{e.textContent=o;e.classList.toggle('hide',!o)});
+}
+
+/* ---------- settings & backup ---------- */
+function loadSettings(){$('s_name').value=S.name;$('s_phone').value=S.phone;$('s_addr').value=S.addr;$('s_cur').value=S.cur;$('s_pre').value=S.pre;$('s_mode').value=S.mode||'a4';$('s_paper').value=S.paper||'58'}
+function saveSettings(){S={name:$('s_name').value||'RW Maintenance',phone:$('s_phone').value,addr:$('s_addr').value,cur:$('s_cur').value||'Rs',pre:$('s_pre').value,mode:$('s_mode').value,paper:$('s_paper').value};save();alert('Settings save ho gayi ✔')}
+function exportData(){
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({bills,S})],{type:'application/json'}));
+ a.download='billing-backup-'+today()+'.json';a.click();
+}
+function importData(e){
+ const f=e.target.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.bills))throw 0;if(!confirm('Maujooda data replace ho jayega. Theek hai?'))return;bills=d.bills;S=d.S||S;save();location.reload()}catch(x){alert('Ghalat file')}};
+ r.readAsText(f);
+}
+
+/* ---------- init ---------- */
+resetForm();show('dash');
+</script>
+</body>
+</html>
